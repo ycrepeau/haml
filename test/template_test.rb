@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'test_helper'
 require 'mocks/article'
 
@@ -9,7 +11,7 @@ class TemplateTest < Haml::TestCase
     whitespace_handling    original_engine   list        helpful
     silent_script          tag_parsing       just_stuff  partials
     nuke_outer_whitespace  nuke_inner_whitespace         bemit
-    render_layout partial_layout partial_layout_erb}
+    render_layout partial_layout partial_layout_erb escape_safe_buffer}.freeze
 
   def setup
     @base = create_base
@@ -21,7 +23,8 @@ class TemplateTest < Haml::TestCase
   def create_base
     vars = { 'article' => Article.new, 'foo' => 'value one' }
 
-    base = ActionView::Base.new(TemplateTestHelper::TEMPLATE_PATH, vars)
+    context = ActionView::LookupContext.new(TemplateTestHelper::TEMPLATE_PATH)
+    base = ActionView::Base.new(context, vars)
 
     # This is needed by RJS in (at least) Rails 3
     base.instance_variable_set(:@template, base)
@@ -30,12 +33,14 @@ class TemplateTest < Haml::TestCase
     # It's usually provided by ActionController::Base.
     def base.protect_against_forgery?; false; end
 
+    def base.compiled_method_container() self.class; end
+
     base
   end
 
   def render(text, options = {})
     return @base.render(:inline => text, :type => :haml) if options == :action_view
-    options = options.merge(:format => :xhtml)
+    options[:format] = :xhtml
     super(text, options, @base)
   end
 
@@ -48,13 +53,17 @@ class TemplateTest < Haml::TestCase
   def assert_renders_correctly(name, &render_method)
     old_options = Haml::Template.options.dup
     Haml::Template.options[:escape_html] = false
-    render_method ||= proc { |n| @base.render(:file => n) }
+    render_method ||= proc { |n| @base.render(template: n) }
+    expected = load_result(name)
+    actual = if ['silent_script', 'helpful'].include? name
+      silence_warnings { render_method[name] }
+    else
+      render_method[name]
+    end
 
-    silence_warnings do
-      load_result(name).split("\n").zip(render_method[name].split("\n")).each_with_index do |pair, line|
-        message = "template: #{name}\nline:     #{line}"
-        assert_equal(pair.first, pair.last, message)
-      end
+    expected.split("\n").zip(actual.split("\n")).each_with_index do |pair, line|
+      message = "template: #{name}\nline:     #{line}"
+      assert_equal(pair.first, pair.last, message)
     end
   rescue ActionView::Template::Error => e
     if e.message =~ /Can't run [\w:]+ filter; required (one of|file) ((?:'\w+'(?: or )?)+)(, but none were found| not found)/
@@ -237,11 +246,7 @@ HAML
   def test_xss_protection_in_attributes
     assert_equal("<div data-html='&lt;foo&gt;bar&lt;/foo&gt;'></div>\n", render('%div{ "data-html" => "<foo>bar</foo>" }', :action_view))
   end
-
-  def test_xss_protection_in_attributes_with_safe_strings
-    assert_equal("<div data-html='<foo>bar</foo>'></div>\n", render('%div{ "data-html" => "<foo>bar</foo>".html_safe }', :action_view))
-  end
-
+  
   def test_xss_protection_with_bang_in_interpolation
     assert_equal("Foo & Bar\n", render('! Foo #{"&"} Bar', :action_view))
   end

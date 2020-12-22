@@ -1,4 +1,5 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
+
 require 'haml/attribute_builder'
 require 'haml/attribute_compiler'
 require 'haml/temple_line_counter'
@@ -95,13 +96,11 @@ module Haml
         parse = false
         value = t[:parse] ? nil : t[:value]
         dynamic_attributes = Haml::Parser::DynamicAttributes.new
-        preserve_script = false
       else
         object_ref = t[:object_ref]
         parse = t[:parse]
         value = t[:value]
         dynamic_attributes = t[:dynamic_attributes]
-        preserve_script = t[:preserve_script]
       end
 
       if @options[:trace]
@@ -169,7 +168,7 @@ module Haml
     end
 
     def compile_filter
-      unless filter = @filters[@node.value[:name]]
+      unless (filter = @filters[@node.value[:name]])
         name = @node.value[:name]
         if ["maruku", "textile"].include?(name)
           raise Error.new(Error.message(:install_haml_contrib, name), @node.line - 1)
@@ -189,29 +188,27 @@ module Haml
 
       if @options.html5?
         '<!DOCTYPE html>'
-      else
-        if @options.xhtml?
-          if @node.value[:version] == "1.1"
-            '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">'
-          elsif @node.value[:version] == "5"
-            '<!DOCTYPE html>'
-          else
-            case @node.value[:type]
-            when "strict";   '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">'
-            when "frameset"; '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">'
-            when "mobile";   '<!DOCTYPE html PUBLIC "-//WAPFORUM//DTD XHTML Mobile 1.2//EN" "http://www.openmobilealliance.org/tech/DTD/xhtml-mobile12.dtd">'
-            when "rdfa";     '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">'
-            when "basic";    '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML Basic 1.1//EN" "http://www.w3.org/TR/xhtml-basic/xhtml-basic11.dtd">'
-            else             '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">'
-            end
-          end
-
-        elsif @options.html4?
+      elsif @options.xhtml?
+        if @node.value[:version] == "1.1"
+          '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">'
+        elsif @node.value[:version] == "5"
+          '<!DOCTYPE html>'
+        else
           case @node.value[:type]
-          when "strict";   '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">'
-          when "frameset"; '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">'
-          else             '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">'
+          when "strict";   '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">'
+          when "frameset"; '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">'
+          when "mobile";   '<!DOCTYPE html PUBLIC "-//WAPFORUM//DTD XHTML Mobile 1.2//EN" "http://www.openmobilealliance.org/tech/DTD/xhtml-mobile12.dtd">'
+          when "rdfa";     '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">'
+          when "basic";    '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML Basic 1.1//EN" "http://www.w3.org/TR/xhtml-basic/xhtml-basic11.dtd">'
+          else             '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">'
           end
+        end
+
+      elsif @options.html4?
+        case @node.value[:type]
+        when "strict";   '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">'
+        when "frameset"; '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">'
+        else             '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">'
         end
       end
     end
@@ -317,7 +314,7 @@ module Haml
 
       case last.first
       when :text
-        last[1].rstrip!
+        last[1] = last[1].rstrip
         if last[1].empty?
           @to_merge.slice! index
           rstrip_buffer! index

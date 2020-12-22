@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'test_helper'
 
 class TempleLineCounterTest < Haml::TestCase
@@ -22,7 +24,7 @@ class TempleLineCounterTest < Haml::TestCase
     [:escape, true, [:static, "foo\nbar"]],
     [:escape, :once, [:static, "foo\nbar"]],
     [:escape, false, [:dynamic, "foo\nbar"]],
-  ]
+  ].freeze
 
   def test_count_lines
     TESTED_TEMPLES.each do |temple|

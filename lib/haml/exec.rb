@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'optparse'
 require 'rbconfig'
 require 'pp'
@@ -120,7 +121,7 @@ module Haml
         @options[:input], @options[:output] = input, output
       end
 
-      COLORS = { :red => 31, :green => 32, :yellow => 33 }
+      COLORS = {red: 31, green: 32, yellow: 33}.freeze
 
       # Prints a status message about performing the given action,
       # colored using the given color (via terminal escapes) if possible.
@@ -337,11 +338,9 @@ END
       end
 
       def validate_ruby(code)
-        begin
-          eval("BEGIN {return nil}; #{code}", binding, @options[:filename])
-        rescue ::SyntaxError # Not to be confused with Haml::SyntaxError
-          $!
-        end
+        eval("BEGIN {return nil}; #{code}", binding, @options[:filename] || "")
+      rescue ::SyntaxError # Not to be confused with Haml::SyntaxError
+        $!
       end
     end
   end

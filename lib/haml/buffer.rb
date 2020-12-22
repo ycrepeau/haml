@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Haml
   # This class is used only internally. It holds the buffer of HTML that
   # is eventually output as the resulting document.
@@ -132,7 +133,9 @@ module Haml
     def attributes(class_id, obj_ref, *attributes_hashes)
       attributes = class_id
       attributes_hashes.each do |old|
-        AttributeBuilder.merge_attributes!(attributes, Hash[old.map {|k, v| [k.to_s, v]}])
+        result = {}
+        old.each { |k, v| result[k.to_s] = v }
+        AttributeBuilder.merge_attributes!(attributes, result)
       end
       AttributeBuilder.merge_attributes!(attributes, parse_object_ref(obj_ref)) if obj_ref
       AttributeBuilder.build_attributes(

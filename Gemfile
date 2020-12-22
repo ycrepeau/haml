@@ -3,17 +3,14 @@ gemspec
 
 gem "m"
 gem "pry"
+gem "simplecov"
 
 group :docs do
-  gem "yard", "~> 0.8.0"
+  gem "yard"
   gem "kramdown"
   gem "sass"
 end
 
 platform :mri do
   gem "ruby-prof"
-end
-
-platform :mri_21 do
-  gem "simplecov"
 end

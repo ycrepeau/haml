@@ -1,5 +1,64 @@
 # Haml Changelog
 
+## 5.2.1
+
+Released on November 30, 2020
+([diff](https://github.com/haml/haml/compare/v5.2.0...v5.2.1)).
+
+* Add in improved "multiline" support for attributes [#1043](https://github.com/haml/haml/issues/1043)
+
+## 5.2
+
+Released on September 28, 2020
+([diff](https://github.com/haml/haml/compare/v5.1.2...v5.2.0)).
+
+* Fix crash in the attribute optimizer when `#inspect` is overridden in TrueClass / FalseClass [#972](https://github.com/haml/haml/issues/972)
+* Do not HTML-escape templates that are declared to be plaintext [#1014](https://github.com/haml/haml/issues/1014) (Thanks [@cesarizu](https://github.com/cesarizu))
+* Class names are no longer ordered alphabetically, and now follow a new specification as laid out in REFERENCE [#306](https://github.com/haml/haml/issues/306)
+
+## 5.1.2
+
+Released on August 6, 2019
+([diff](https://github.com/haml/haml/compare/v5.1.1...v5.1.2)).
+
+* Fix crash in some environments such as New Relic by unfreezing string literals for ParseNode#inspect. [#1016](https://github.com/haml/haml/pull/1016) (thanks [Jalyna](https://github.com/jalyna))
+
+## 5.1.1
+
+Released on May 25, 2019
+([diff](https://github.com/haml/haml/compare/v5.1.0...v5.1.1)).
+
+* Fix NameError bug that happens on ruby 2.6.1-2.6.3 + haml 5.1.0 + rails < 5.1 + erubi. (Akira Matsuda)
+
+## 5.1.0
+
+Released on May 16, 2019
+([diff](https://github.com/haml/haml/compare/v5.0.4...v5.1.0)).
+
+* Rails 6 support [#1008](https://github.com/haml/haml/pull/1008) (thanks [Seb Jacobs](https://github.com/sebjacobs))
+* Add `escape_filter_interpolations` option for backwards compatibility with haml 4 defaults [#984](https://github.com/haml/haml/pull/984) (thanks [Will Jordan](https://github.com/wjordan))
+* Fix error on empty :javascript and :css filter blocks [#986](https://github.com/haml/haml/pull/986) (thanks [Will Jordan](https://github.com/wjordan))
+* Respect changes in Haml::Options.defaults in `Haml::TempleEngine` options (Takashi Kokubun)
+* Un-freeze TempleEngine precompiled string literals [#983](https://github.com/haml/haml/pull/983) (thanks [Will Jordan](https://github.com/wjordan))
+* Various performance/memory improvements [#965](https://github.com/haml/haml/pull/965), [#966](https://github.com/haml/haml/pull/966), [#963](https://github.com/haml/haml/pull/963) (thanks [Dillon Welch](https://github.com/oniofchaos))
+* Enable `frozen_string_literal` magic comment for all .rb files [#967](https://github.com/haml/haml/pull/967) (thanks [Dillon Welch](https://github.com/oniofchaos))
+
+## 5.0.4
+
+Released on October 13, 2017
+([diff](https://github.com/haml/haml/compare/v5.0.3...v5.0.4)).
+
+* Fix `haml -c --stdin` regression in 5.0.2. [#958](https://github.com/haml/haml/pull/958) (thanks [Timo Göllner](https://github.com/TeaMoe))
+* Ruby 2.5 support (it wasn't working due to Ripper API change). (Akira Matsuda)
+
+## 5.0.3
+
+Released on September 7, 2017
+([diff](https://github.com/haml/haml/compare/v5.0.2...v5.0.3)).
+
+* Use `String#dump` instead of `String#inspect` to generate string literal. (Takashi Kokubun)
+* Fix Erubi superclass mismatch error. [#952](https://github.com/haml/haml/pull/952) (thanks [Robin Daugherty](https://github.com/RobinDaugherty))
+
 ## 5.0.2
 
 Released on August 1, 2017
@@ -10,7 +69,7 @@ Released on August 1, 2017
 * Fix `list_of` helper with multi-line content. [#933](https://github.com/haml/haml/pull/933) (thanks [Benoit Larroque](https://github.com/zetaben))
 * Optimize rendering performance by changing timing to fix textareas. [#941](https://github.com/haml/haml/pull/941) (Takashi Kokubun)
 * Fix `TypeError` with empty :ruby filter. [#942](https://github.com/haml/haml/pull/942) (Takashi Kokubun)
-* Fix inconsitent attribute sort order. (Takashi Kokubun)
+* Fix inconsistent attribute sort order. (Takashi Kokubun)
 
 ## 5.0.1
 
@@ -1436,4 +1495,3 @@ has been moved to [YARD](http://yard.soen.ca).
 YARD is an excellent documentation system,
 and allows us to write our documentation in [Maruku](http://maruku.rubyforge.org),
 which is also excellent.
->>>>>>> External Changes

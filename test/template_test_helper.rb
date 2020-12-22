@@ -1,13 +1,7 @@
+# frozen_string_literal: true
+
 module TemplateTestHelper
   TEMPLATE_PATH = File.join(__dir__, "templates")
-end
-
-module Haml::Filters::Test
-  include Haml::Filters::Base
-
-  def render(text)
-    "TESTING HAHAHAHA!"
-  end
 end
 
 module Haml::Helpers
@@ -17,7 +11,7 @@ module Haml::Helpers
 end
 
 class Egocentic
-  def method_missing(*args)
+  def method_missing(*)
     self
   end
 end

@@ -1,47 +1,44 @@
 # frozen_string_literal: true
+
 module Haml
   # This class encapsulates all of the configuration options that Haml
   # understands. Please see the {file:REFERENCE.md#options Haml Reference} to
   # learn how to set the options.
   class Options
-
     @valid_formats = [:html4, :html5, :xhtml]
-
     @buffer_option_keys = [:autoclose, :preserve, :attr_wrapper, :format,
-      :encoding, :escape_html, :escape_attrs, :hyphenate_data_attrs, :cdata]
+      :encoding, :escape_html, :escape_filter_interpolations, :escape_attrs, :hyphenate_data_attrs, :cdata]
 
-    # The default option values.
-    # @return Hash
-    def self.defaults
-      @defaults ||= Haml::TempleEngine.options.to_hash.merge(encoding: 'UTF-8')
-    end
-
-    # An array of valid values for the `:format` option.
-    # @return Array
-    def self.valid_formats
-      @valid_formats
-    end
-
-    # An array of keys that will be used to provide a hash of options to
-    # {Haml::Buffer}.
-    # @return Hash
-    def self.buffer_option_keys
-      @buffer_option_keys
-    end
-
-    # Returns a subset of defaults: those that {Haml::Buffer} cares about.
-    # @return [{Symbol => Object}] The options hash
-    def self.buffer_defaults
-      @buffer_defaults ||= buffer_option_keys.inject({}) do |hash, key|
-        hash.merge(key => defaults[key])
+    class << self
+      # The default option values.
+      # @return Hash
+      def defaults
+        @defaults ||= Haml::TempleEngine.options.to_hash.merge(encoding: 'UTF-8')
       end
-    end
 
-    def self.wrap(options)
-      if options.is_a?(Options)
-        options
-      else
-        Options.new(options)
+      # An array of valid values for the `:format` option.
+      # @return Array
+      attr_reader :valid_formats
+
+      # An array of keys that will be used to provide a hash of options to
+      # {Haml::Buffer}.
+      # @return Hash
+      attr_reader :buffer_option_keys
+
+      # Returns a subset of defaults: those that {Haml::Buffer} cares about.
+      # @return [{Symbol => Object}] The options hash
+      def buffer_defaults
+        @buffer_defaults ||= buffer_option_keys.inject({}) do |hash, key|
+          hash.merge(key => defaults[key])
+        end
+      end
+
+      def wrap(options)
+        if options.is_a?(Options)
+          options
+        else
+          Options.new(options)
+        end
       end
     end
 
@@ -84,6 +81,13 @@ module Haml
     #
     # Defaults to false.
     attr_accessor :escape_html
+
+    # Sets whether or not to escape HTML-sensitive characters in interpolated strings.
+    # See also {file:REFERENCE.md#escaping_html Escaping HTML} and
+    # {file:REFERENCE.md#unescaping_html Unescaping HTML}.
+    #
+    # Defaults to the current value of `escape_html`.
+    attr_accessor :escape_filter_interpolations
 
     # The name of the Haml file being parsed.
     # This is only used as information when exceptions are raised. This is
@@ -131,7 +135,7 @@ module Haml
     # formatting errors.
     #
     # Defaults to `false`.
-    attr_reader :remove_whitespace
+    attr_accessor :remove_whitespace
 
     # Whether or not attribute hashes and Ruby scripts designated by `=` or `~`
     # should be evaluated. If this is `true`, said scripts are rendered as empty
@@ -167,7 +171,7 @@ module Haml
     # Key is filter name in String and value is Class to use. Defaults to {}.
     attr_accessor :filters
 
-    def initialize(values = {}, &block)
+    def initialize(values = {})
       defaults.each {|k, v| instance_variable_set :"@#{k}", v}
       values.each {|k, v| send("#{k}=", v) if defaults.has_key?(k) && !v.nil?}
       yield if block_given?
@@ -235,10 +239,6 @@ module Haml
     undef :cdata
     def cdata
       xhtml? || @cdata
-    end
-
-    def remove_whitespace=(value)
-      @remove_whitespace = value
     end
 
     def encoding=(value)

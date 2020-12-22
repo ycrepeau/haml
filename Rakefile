@@ -14,7 +14,7 @@ isolated_test = Rake::TestTask.new do |t|
 end
 Rake::TestTask.new do |t|
   t.libs << 'test'
-  t.test_files = Dir['test/*_test.rb'] + Dir['test/haml-spec/*_test.rb'] - isolated_test.file_list
+  t.test_files = Dir['test/*_test.rb'] + Dir['test/haml-spec/*_test.rb'] + Dir['test/cases/*_test.rb'] - isolated_test.file_list
   t.warning = true
   t.verbose = true
 end
@@ -25,13 +25,6 @@ desc "Benchmark Haml against ERB. TIMES=n sets the number of runs, default is 10
 task :benchmark do
   sh "ruby benchmark.rb #{ENV['TIMES']}"
 end
-
-task :set_coverage_env do
-  ENV["COVERAGE"] = "true"
-end
-
-desc "Run Simplecov"
-task :coverage => [:set_coverage_env, :test]
 
 task :submodules do
   if File.exist?(File.dirname(__FILE__) + "/.git")
@@ -88,11 +81,7 @@ task :profile do
 end
 
 def gemfiles
-  @gemfiles ||= begin
-    Dir[File.dirname(__FILE__) + '/test/gemfiles/Gemfile.*'].
-      reject {|f| f =~ /\.lock$/}.
-      reject {|f| RUBY_VERSION < '1.9.3' && f =~ /Gemfile.rails-(\d+).\d+.x/ && $1.to_i > 3}
-  end
+  @gemfiles ||= Dir[File.dirname(__FILE__) + '/test/gemfiles/Gemfile.*'].reject {|f| f =~ /\.lock$/}
 end
 
 def with_each_gemfile

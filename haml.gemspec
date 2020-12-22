@@ -6,16 +6,22 @@ Gem::Specification.new do |spec|
   spec.summary     = "An elegant, structured (X)HTML/XML templating engine."
   spec.version     = Haml::VERSION
   spec.authors     = ['Natalie Weizenbaum', 'Hampton Catlin', 'Norman Clarke', 'Akira Matsuda']
-  spec.email       = ['haml@googlegroups.com', 'norman@njclarke.com']
+  spec.email       = ['haml@googlegroups.com', 'ronnie@dio.jp']
 
-  readmes          = Dir['*'].reject{ |x| x =~ /(^|[^.a-z])[a-z]+/ || x == "TODO" }
   spec.executables = ['haml']
   spec.files       = `git ls-files -z`.split("\x0").reject do |f|
     f.match(%r{\Atest/})
   end
   spec.homepage    = 'http://haml.info/'
-  spec.has_rdoc    = false
   spec.license     = "MIT"
+  spec.metadata    = {
+    "bug_tracker_uri"   => "https://github.com/haml/haml/issues",
+    "changelog_uri"     => "https://github.com/haml/haml/blob/main/CHANGELOG.md",
+    "documentation_uri" => "http://haml.info/docs.html",
+    "homepage_uri"      => "http://haml.info",
+    "mailing_list_uri"  => "https://groups.google.com/forum/?fromgroups#!forum/haml",
+    "source_code_uri"   => "https://github.com/haml/haml"
+  }
 
   spec.required_ruby_version = '>= 2.0.0'
 
@@ -26,6 +32,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rbench'
   spec.add_development_dependency 'minitest', '>= 4.0'
   spec.add_development_dependency 'nokogiri'
+  spec.add_development_dependency 'simplecov'
 
   spec.description = <<-END
 Haml (HTML Abstraction Markup Language) is a layer on top of HTML or XML that's

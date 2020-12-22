@@ -1,4 +1,5 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
+
 require 'erb'
 
 module Haml
@@ -109,10 +110,7 @@ MESSAGE
     #   @yield The block within which to escape newlines
     def find_and_preserve(input = nil, tags = haml_buffer.options[:preserve], &block)
       return find_and_preserve(capture_haml(&block), input || tags) if block
-      tags = tags.each_with_object('') do |t, s|
-        s << '|' unless s.empty?
-        s << Regexp.escape(t)
-      end
+      tags = tags.map { |tag| Regexp.escape(tag) }.join('|')
       re = /<(#{tags})([^>]*)>(.*?)(<\/\1>)/im
       input.to_s.gsub(re) do |s|
         s =~ re # Can't rely on $1, etc. existing since Rails' SafeBuffer#gsub is incompatible
@@ -200,8 +198,8 @@ MESSAGE
     # @yield [item] A block which contains Haml code that goes within list items
     # @yieldparam item An element of `enum`
     def list_of(enum, opts={}, &block)
-      opts_attributes = opts.each_with_object('') {|(k, v), s| s << " #{k}='#{v}'"}
-      enum.each_with_object('') do |i, ret|
+      opts_attributes = opts.map { |k, v| " #{k}='#{v}'" }.join
+      enum.map do |i|
         result = capture_haml(i, &block)
 
         if result.count("\n") > 1
@@ -211,9 +209,8 @@ MESSAGE
           result.strip!
         end
 
-        ret << "\n" unless ret.empty?
-        ret << %Q!<li#{opts_attributes}>#{result}</li>!
-      end
+        %Q!<li#{opts_attributes}>#{result}</li>!
+      end.join("\n")
     end
 
     # Returns a hash containing default assignments for the `xmlns`, `lang`, and `xml:lang`
@@ -596,7 +593,7 @@ MESSAGE
     end
 
     # Characters that need to be escaped to HTML entities from user input
-    HTML_ESCAPE = { '&' => '&amp;', '<' => '&lt;', '>' => '&gt;', '"' => '&quot;', "'" => '&#39;' }
+    HTML_ESCAPE = {'&' => '&amp;', '<' => '&lt;', '>' => '&gt;', '"' => '&quot;', "'" => '&#39;'}.freeze
 
     HTML_ESCAPE_REGEX = /['"><&]/
 
@@ -610,8 +607,11 @@ MESSAGE
     # @param text [String] The string to sanitize
     # @return [String] The sanitized string
     def html_escape(text)
-      ERB::Util.html_escape(text)
+      CGI.escapeHTML(text.to_s)
     end
+
+    # Always escape text regardless of html_safe?
+    alias_method :html_escape_without_haml_xss, :html_escape
 
     HTML_ESCAPE_ONCE_REGEX = /['"><]|&(?!(?:[a-zA-Z]+|#(?:\d+|[xX][0-9a-fA-F]+));)/
 
@@ -624,6 +624,9 @@ MESSAGE
       text = text.to_s
       text.gsub(HTML_ESCAPE_ONCE_REGEX, HTML_ESCAPE)
     end
+
+    # Always escape text once regardless of html_safe?
+    alias_method :escape_once_without_haml_xss, :escape_once
 
     # Returns whether or not the current template is a Haml template.
     #
@@ -704,4 +707,3 @@ class Object
     false
   end
 end
-

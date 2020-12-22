@@ -1,16 +1,7 @@
-begin
-  if ENV['TRAVIS'] && RUBY_VERSION == '2.1.2' && !defined?(Rubinius)
-    require 'coveralls'
-    Coveralls.wear!
-  end
-rescue LoadError
-  # ignore error for other test Gemfiles
-end
+# frozen_string_literal: true
 
-if ENV["COVERAGE"]
-  require "simplecov"
-  SimpleCov.start
-end
+require "simplecov"
+SimpleCov.start
 
 require 'bundler/setup'
 require 'minitest/autorun'
@@ -20,6 +11,7 @@ require 'action_view'
 require 'action_view/base'
 require 'nokogiri'
 require 'rails'
+Bundler.require(:default)
 
 if defined?(I18n.enforce_available_locales)
   I18n.enforce_available_locales = true
@@ -29,7 +21,9 @@ class TestApp < Rails::Application
   config.eager_load = false
   config.root = ""
 end
+
 Rails.application = TestApp
+Rails.backtrace_cleaner.remove_silencers!
 
 ActionController::Base.logger = Logger.new(nil)
 
@@ -50,17 +44,17 @@ BASE_TEST_CLASS = if defined?(Minitest::Test)
                     MiniTest::Unit::TestCase
                   end
 
-module Declarative
-  def test(name, &block)
-    define_method("test_ #{name}", &block)
-  end
-end
-
 class Haml::TestCase < BASE_TEST_CLASS
+  module Declarative
+    def test(name, &block)
+      define_method("test_ #{name}", &block)
+    end
+  end
+
   extend Declarative
 
   def render(text, options = {}, base = nil, &block)
-    scope  = options.delete(:scope)  || Object.new
+    scope = options.delete(:scope) || Object.new
     locals = options.delete(:locals) || {}
     engine = Haml::Engine.new(text, options)
     return engine.to_html(base) if base
@@ -91,6 +85,14 @@ class Haml::TestCase < BASE_TEST_CLASS
     assert_equal(message, e.message)
   else
     flunk "Expected exception #{klass}, none raised"
+  end
+
+  def action_view_instance
+    Class.new(ActionView::Base) do
+      def compiled_method_container
+        self.class
+      end
+    end.new(ActionView::LookupContext.new(''))
   end
 
   def self.error(*args)

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'test_helper'
 
 class FiltersTest < Haml::TestCase
@@ -26,11 +28,8 @@ class FiltersTest < Haml::TestCase
   test "should raise error when a Tilt filters dependencies are unavailable for extension" do
     begin
       assert_raises Haml::Error do
-        # ignore warnings from Tilt
-        silence_warnings do
-          Haml::Filters.register_tilt_filter "Textile"
-          Haml::Filters.defined["textile"].template_class
-        end
+        Haml::Filters.register_tilt_filter "Textile"
+        Haml::Filters.defined["textile"].template_class
       end
     ensure
       Haml::Filters.remove_filter "Textile"
@@ -184,6 +183,12 @@ class JavascriptFilterTest < Haml::TestCase
     refute_match('//<![CDATA[', out)
     refute_match('//]]>', out)
   end
+
+  test "should emit tag on empty block" do
+    html = "<script>\n  \n</script>\n"
+    haml = ":javascript"
+    assert_equal(html, render(haml))
+  end
 end
 
 class CSSFilterTest < Haml::TestCase
@@ -222,6 +227,12 @@ class CSSFilterTest < Haml::TestCase
     out = render(haml, :format => :html5)
     refute_match('<![CDATA[', out)
     refute_match(']]>', out)
+  end
+
+  test "should emit tag on empty block" do
+    html = "<style>\n  \n</style>\n"
+    haml = ":css"
+    assert_equal(html, render(haml))
   end
 end
 

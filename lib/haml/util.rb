@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 
 begin
   require 'erubis/tiny'
@@ -166,7 +166,7 @@ MSG
     #   and the rest of the string.
     #   `["Foo (Bar (Baz bang) bop)", " (Bang (bop bip))"]` in the example above.
     def balance(scanner, start, finish, count = 0)
-      str = ''
+      str = ''.dup
       scanner = StringScanner.new(scanner) unless scanner.is_a? StringScanner
       regexp = Regexp.new("(.*?)[\\#{start.chr}\\#{finish.chr}]", Regexp::MULTILINE)
       while scanner.scan(regexp)
@@ -199,7 +199,7 @@ MSG
     end
 
     def unescape_interpolation(str, escape_html = nil)
-      res = ''
+      res = ''.dup
       rest = Haml::Util.handle_interpolation str.dump do |scan|
         escapes = (scan[2].size - 1) / 2
         char = scan[3] # '{', '@' or '$'
@@ -212,8 +212,8 @@ MSG
           else
             scan.scan(/\w+/)
           end
-          content = eval('"' + interpolated + '"')
-          content.prepend(char) if char == '@' || char == '$'
+          content = eval("\"#{interpolated}\"")
+          content = "#{char}#{content}" if char == '@' || char == '$'
           content = "Haml::Helpers.html_escape((#{content}))" if escape_html
 
           res << "\#{#{content}}"
@@ -234,7 +234,7 @@ MSG
       scanner = StringScanner.new(str.dup.force_encoding(Encoding::ASCII_8BIT))
       bom = scanner.scan(/\xEF\xBB\xBF/n)
       return bom unless scanner.scan(/-\s*#\s*/n)
-      if coding = try_parse_haml_emacs_magic_comment(scanner)
+      if (coding = try_parse_haml_emacs_magic_comment(scanner))
         return bom, coding
       end
 

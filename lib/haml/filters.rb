@@ -1,4 +1,5 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
+
 require "tilt"
 
 module Haml
@@ -119,7 +120,7 @@ module Haml
       # @param text [String] The source text for the filter to process
       # @return [String] The filtered result
       # @raise [Haml::Error] if it's not overridden
-      def render(text)
+      def render(_text)
         raise Error.new("#{self.inspect}#render not defined!")
       end
 
@@ -130,7 +131,7 @@ module Haml
       # @param text [String] The source text for the filter to process
       # @return [String] The filtered result
       # @raise [Haml::Error] if it or \{#render} isn't overridden
-      def render_with_options(text, options)
+      def render_with_options(text, _options)
         render(text)
       end
 
@@ -164,7 +165,11 @@ module Haml
           if contains_interpolation?(text)
             return if options[:suppress_eval]
 
-            text = unescape_interpolation(text, options[:escape_html]).gsub(/(\\+)n/) do |s|
+            escape = options[:escape_filter_interpolations]
+            # `escape_filter_interpolations` defaults to `escape_html` if unset.
+            escape = options[:escape_html] if escape.nil?
+
+            text = unescape_interpolation(text, escape).gsub(/(\\+)n/) do |s|
               escapes = $1.size
               next s if escapes % 2 == 0
               "#{'\\' * (escapes - 1)}\n"
@@ -182,9 +187,8 @@ RUBY
             return
           end
 
-          rendered = Haml::Helpers::find_and_preserve(filter.render_with_options(text, compiler.options), compiler.options[:preserve])
-          rendered.rstrip!
-          push_text("#{rendered}\n")
+          rendered = Haml::Helpers::find_and_preserve(filter.render_with_options(text.to_s, compiler.options), compiler.options[:preserve])
+          push_text("#{rendered.rstrip}\n")
         end
       end
     end
@@ -247,10 +251,7 @@ RUBY
 
       # @see Base#render
       def render(text)
-        text = "\n#{text}"
-        text.rstrip!
-        text.gsub!("\n", "\n    ")
-        "<![CDATA[#{text}\n]]>"
+        "<![CDATA[#{"\n#{text.rstrip}".gsub("\n", "\n    ")}\n]]>"
       end
     end
 

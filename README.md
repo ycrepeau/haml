@@ -1,9 +1,8 @@
 # Haml
 
 [![Gem Version](https://badge.fury.io/rb/haml.svg)](http://rubygems.org/gems/haml)
-[![Build Status](https://travis-ci.org/haml/haml.svg?branch=master)](http://travis-ci.org/haml/haml)
-[![Code Climate](http://img.shields.io/codeclimate/github/haml/haml.svg)](https://codeclimate.com/github/haml/haml)
-[![Coverage Status](http://img.shields.io/coveralls/haml/haml.svg)](https://coveralls.io/r/haml/haml)
+[![Build Status](https://travis-ci.org/haml/haml.svg?branch=main)](http://travis-ci.org/haml/haml)
+[![Code Climate](https://codeclimate.com/github/haml/haml/badges/gpa.svg)](https://codeclimate.com/github/haml/haml)
 [![Inline docs](http://inch-ci.org/github/haml/haml.png)](http://inch-ci.org/github/haml/haml)
 
 Haml is a templating engine for HTML. It's designed to make it both easier and
@@ -32,7 +31,7 @@ to compile it to HTML. For more information on these commands, check out
 haml --help
 ~~~
 
-To use Haml programatically, check out the [YARD documentation](http://haml.info/docs/yardoc/).
+To use Haml programmatically, check out the [YARD documentation](http://haml.info/docs/yardoc/).
 
 ## Using Haml with Rails
 
@@ -191,7 +190,7 @@ Some of Natalie's work on Haml was supported by Unspace Interactive.
 
 Beyond that, the implementation is licensed under the MIT License.
 
-Copyright (c) 2006-2013 Hampton Catlin, Natalie Weizenbaum and the Haml team
+Copyright (c) 2006-2019 Hampton Catlin, Natalie Weizenbaum and the Haml team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in

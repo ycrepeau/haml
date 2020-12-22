@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'test_helper'
 
 module Haml
@@ -66,7 +68,7 @@ module Haml
         flunk 'else clause after if containing unless should be accepted'
       end
     end
-    
+
     test "loud script with else is accepted" do
       begin
         parse "= if true\n  - 'A'\n-else\n  - 'B'"
@@ -92,6 +94,14 @@ module Haml
       rescue SyntaxError
         flunk 'case with indented whens should allow else'
       end
+    end
+
+    test "inspect for node with children returns text" do
+      text = "some revealed text"
+      cond = "[cond]"
+      node = parse("/!#{cond} #{text}")
+
+      assert_equal "(root nil\n  (comment {:conditional=>\"[cond]\", :text=>\"some revealed text\", :revealed=>true, :parse=>false}))", node.inspect
     end
 
     test "revealed conditional comments are detected" do

@@ -1,4 +1,6 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
+
+require 'ripper'
 require 'strscan'
 
 module Haml
@@ -60,7 +62,7 @@ module Haml
       SILENT_SCRIPT,
       ESCAPE,
       FILTER
-    ]
+    ].freeze
 
     # The value of the character that designates that a line is part
     # of a multiline string.
@@ -74,8 +76,8 @@ module Haml
     #
     BLOCK_WITH_SPACES = /do\s*\|\s*[^\|]*\s+\|\z/
 
-    MID_BLOCK_KEYWORDS = %w[else elsif rescue ensure end when]
-    START_BLOCK_KEYWORDS = %w[if begin case unless]
+    MID_BLOCK_KEYWORDS = %w[else elsif rescue ensure end when].freeze
+    START_BLOCK_KEYWORDS = %w[if begin case unless].freeze
     # Try to parse assignments to block starters as best as possible
     START_BLOCK_KEYWORD_REGEX = /(?:\w+(?:,\s*\w+)*\s*=\s*)?(#{START_BLOCK_KEYWORDS.join('|')})/
     BLOCK_KEYWORD_REGEX = /^-?\s*(?:(#{MID_BLOCK_KEYWORDS.join('|')})|#{START_BLOCK_KEYWORD_REGEX.source})\b/
@@ -88,6 +90,9 @@ module Haml
 
     ID_KEY    = 'id'.freeze
     CLASS_KEY = 'class'.freeze
+
+    # Used for scanning old attributes, substituting the first '{'
+    METHOD_CALL_PREFIX = 'a('
 
     def initialize(options)
       @options = Options.wrap(options)
@@ -178,7 +183,7 @@ module Haml
     private
 
     # @private
-    class Line < Struct.new(:whitespace, :text, :full, :index, :parser, :eod)
+    Line = Struct.new(:whitespace, :text, :full, :index, :parser, :eod) do
       alias_method :eod?, :eod
 
       # @private
@@ -194,25 +199,26 @@ module Haml
     end
 
     # @private
-    class ParseNode < Struct.new(:type, :line, :value, :parent, :children)
+    ParseNode = Struct.new(:type, :line, :value, :parent, :children) do
       def initialize(*args)
         super
         self.children ||= []
       end
 
       def inspect
-        %Q[(#{type} #{value.inspect}#{children.each_with_object('') {|c, s| s << "\n#{c.inspect.gsub!(/^/, '  ')}"}})]
+        %Q[(#{type} #{value.inspect}#{children.each_with_object(''.dup) {|c, s| s << "\n#{c.inspect.gsub!(/^/, '  ')}"}})].dup
       end
     end
 
     # @param [String] new - Hash literal including dynamic values.
     # @param [String] old - Hash literal including dynamic values or Ruby literal of multiple Hashes which MUST be interpreted as method's last arguments.
-    class DynamicAttributes < Struct.new(:new, :old)
+    DynamicAttributes = Struct.new(:new, :old) do
+      undef :old=
       def old=(value)
         unless value =~ /\A{.*}\z/m
           raise ArgumentError.new('Old attributes must start with "{" and end with "}"')
         end
-        super
+        self[:old] = value
       end
 
       # This will be a literal for Haml::Buffer#attributes's last argument, `attributes_hashes`.
@@ -287,7 +293,7 @@ module Haml
     end
 
     def block_keyword(text)
-      return unless keyword = text.scan(BLOCK_KEYWORD_REGEX)[0]
+      return unless (keyword = text.scan(BLOCK_KEYWORD_REGEX)[0])
       keyword[0] || keyword[1]
     end
 
@@ -305,7 +311,7 @@ module Haml
         return ParseNode.new(:plain, line.index + 1, :text => line.text)
       end
 
-      escape_html = @options.escape_html if escape_html.nil?
+      escape_html = @options.escape_html && @options.mime_type != 'text/plain' if escape_html.nil?
       line.text = unescape_interpolation(line.text, escape_html)
       script(line, false)
     end
@@ -534,7 +540,7 @@ module Haml
 
       # Post-process case statements to normalize the nesting of "when" clauses
       return unless node.value[:keyword] == "case"
-      return unless first = node.children.first
+      return unless (first = node.children.first)
       return unless first.type == :silent_script && first.value[:keyword] == "when"
       return if first.children.empty?
       # If the case node has a "when" child with children, it's the
@@ -583,9 +589,9 @@ module Haml
       scanner = StringScanner.new(text)
       scanner.scan(/\s+/)
       until scanner.eos?
-        return unless key = scanner.scan(LITERAL_VALUE_REGEX)
+        return unless (key = scanner.scan(LITERAL_VALUE_REGEX))
         return unless scanner.scan(/\s*=>\s*/)
-        return unless value = scanner.scan(LITERAL_VALUE_REGEX)
+        return unless (value = scanner.scan(LITERAL_VALUE_REGEX))
         return unless scanner.scan(/\s*(?:,|$)\s*/)
         attributes[eval(key).to_s] = eval(value).to_s
       end
@@ -649,13 +655,18 @@ module Haml
     # @return [String] rest
     # @return [Integer] last_line
     def parse_old_attributes(text)
-      text = text.dup
       last_line = @line.index + 1
 
       begin
-        attributes_hash, rest = balance(text, ?{, ?})
+        # Old attributes often look like a valid Hash literal, but it sometimes allow code like
+        # `{ hash, foo: bar }`, which is compiled to `_hamlout.attributes({}, nil, hash, foo: bar)`.
+        #
+        # To scan such code correctly, this scans `a( hash, foo: bar }` instead, stops when there is
+        # 1 more :on_embexpr_end (the last '}') than :on_embexpr_beg, and resurrects '{' afterwards.
+        balanced, rest = balance_tokens(text.sub(?{, METHOD_CALL_PREFIX), :on_embexpr_beg, :on_embexpr_end, count: 1)
+        attributes_hash = balanced.sub(METHOD_CALL_PREFIX, ?{)
       rescue SyntaxError => e
-        if text.strip[-1] == ?, && e.message == Error.message(:unbalanced_brackets)
+        if e.message == Error.message(:unbalanced_brackets) && !@template.empty?
           text << "\n#{@next_line.text}"
           last_line += 1
           next_line
@@ -698,7 +709,7 @@ module Haml
       end
 
       static_attributes = {}
-      dynamic_attributes = "{"
+      dynamic_attributes = "{".dup
       attributes.each do |name, (type, val)|
         if type == :static
           static_attributes[name] = val
@@ -713,7 +724,7 @@ module Haml
     end
 
     def parse_new_attribute(scanner)
-      unless name = scanner.scan(/[-:\w]+/)
+      unless (name = scanner.scan(/[-:\w]+/))
         return if scanner.scan(/\)/)
         return false
       end
@@ -722,8 +733,8 @@ module Haml
       return name, [:static, true] unless scanner.scan(/=/) #/end
 
       scanner.scan(/\s*/)
-      unless quote = scanner.scan(/["']/)
-        return false unless var = scanner.scan(/(@@?|\$)?\w+/)
+      unless (quote = scanner.scan(/["']/))
+        return false unless (var = scanner.scan(/(@@?|\$)?\w+/))
         return name, [:dynamic, var]
       end
 
@@ -738,7 +749,7 @@ module Haml
 
       return name, [:static, content.first[1]] if content.size == 1
       return name, [:dynamic,
-        %!"#{content.each_with_object('') {|(t, v), s| s << (t == :str ? inspect_obj(v)[1...-1] : "\#{#{v}}")}}"!]
+        %!"#{content.each_with_object(''.dup) {|(t, v), s| s << (t == :str ? inspect_obj(v)[1...-1] : "\#{#{v}}")}}"!]
     end
 
     def next_line
@@ -807,6 +818,25 @@ module Haml
 
     def balance(*args)
       Haml::Util.balance(*args) or raise(SyntaxError.new(Error.message(:unbalanced_brackets)))
+    end
+
+    # Unlike #balance, this balances Ripper tokens to balance something like `{ a: "}" }` correctly.
+    def balance_tokens(buf, start, finish, count: 0)
+      text = ''.dup
+      Ripper.lex(buf).each do |_, token, str|
+        text << str
+        case token
+        when start
+          count += 1
+        when finish
+          count -= 1
+        end
+
+        if count == 0
+          return text, buf.sub(text, '')
+        end
+      end
+      raise SyntaxError.new(Error.message(:unbalanced_brackets))
     end
 
     def block_opened?

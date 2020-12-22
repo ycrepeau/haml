@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Haml
   module AttributeBuilder
     # https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
@@ -35,9 +36,9 @@ module Haml
 
           value =
             if escape_attrs == :once
-              Haml::Helpers.escape_once(value.to_s)
+              Haml::Helpers.escape_once_without_haml_xss(value.to_s)
             elsif escape_attrs
-              Haml::Helpers.html_escape(value.to_s)
+              Haml::Helpers.html_escape_without_haml_xss(value.to_s)
             else
               value.to_s
             end
@@ -125,7 +126,7 @@ module Haml
         elsif key == 'class'
           merged_class = filter_and_join(from, ' ')
           if to && merged_class
-            merged_class = (merged_class.split(' ') | to.split(' ')).sort.join(' ')
+            merged_class = (to.split(' ') | merged_class.split(' ')).join(' ')
           elsif to || merged_class
             merged_class ||= to
           end

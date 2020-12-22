@@ -115,6 +115,11 @@ Haml::Options.defaults:
 
     Haml::Options.defaults[:format] = :html5
 
+In sinatra specifically, you can set them in global config with:
+```ruby
+set :haml, { escape_html: true }
+```
+
 Finally, you can also set them by passing an options hash to
 {Haml::Engine#initialize}. For the complete list of available options, please
 see {Haml::Options}.
@@ -223,15 +228,19 @@ is compiled to:
     <html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en'></html>
 
 Attribute hashes can also be stretched out over multiple lines to accommodate
-many attributes. However, newlines may only be placed immediately after commas.
-For example:
+many attributes.
 
-    %script{:type => "text/javascript",
-            :src  => "javascripts/script_#{2 + 7}"}
+    %script{
+      "type": text/javascript",
+      "src": javascripts/script_#{2 + 7}",
+      "data": {
+        "controller": "reporter",
+      },
+    }
 
 is compiled to:
 
-    <script src='javascripts/script_9' type='text/javascript'></script>
+    <script src='javascripts/script_9' type='text/javascript' data-controller='reporter'></script>
 
 #### `:class` and `:id` Attributes {#class-and-id-attributes}
 
@@ -511,6 +520,24 @@ and is compiled to:
         <div class='description'>What a cool item!</div>
       </div>
     </div>
+
+#### Class Name Merging and Ordering
+
+Class names are ordered in the following way:
+
+1) Tag identifiers in order (aka, ".alert.me" => "alert me")
+2) Classes appearing in HTML-style attributes
+3) Classes appearing in Hash-style attributes
+
+For instance, this is a complicated and unintuitive test case illustrating the ordering
+
+    .foo.moo{:class => ['bar', 'alpha']}(class='baz')
+
+The resulting HTML would be as follows:
+
+    <div class='foo moo baz bar alpha'></div>
+
+*Versions of Haml prior to 5.0 would alphabetically sort class names.*
 
 ### Empty (void) Tags: `/`
 
@@ -848,7 +875,7 @@ is compiled to:
 
 ## Ruby Evaluation
 
-### Inserting Ruby: `=`
+### Inserting Ruby: `=` {#inserting_ruby}
 
 The equals character is followed by Ruby code. This code is evaluated and the
 output is inserted into the document. For example:
@@ -1120,8 +1147,8 @@ is compiled to
       <p>I <strong>really</strong> prefer <em>raspberry</em> jam.</p>
     </div>
 
-Note that `#{}` interpolation within filters is HTML-escaped if you specify
-{Haml::Options#escape_html `:escape_html`} option.
+Note that `#{}` interpolation within filters is HTML-escaped if you specify true to
+{Haml::Options#escape_filter_interpolations `:escape_filter_interpolations`} option.
 
 The functionality of some filters such as Markdown can be provided by many
 different libraries. Usually you don't have to worry about this - you can just
@@ -1318,7 +1345,7 @@ that just need a lot of template information.
 So data structures and  functions that require lots of arguments
 can be wrapped over multiple lines,
 as long as each line but the last ends in a comma
-(see [Inserting Ruby](#inserting_ruby_)).
+(see [Inserting Ruby](#inserting_ruby)).
 
 ## Whitespace Preservation
 

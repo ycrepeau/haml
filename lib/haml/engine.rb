@@ -1,4 +1,5 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
+
 require 'forwardable'
 
 require 'haml/parser'
@@ -51,6 +52,9 @@ module Haml
     #   see {file:REFERENCE.md#options the Haml options documentation}
     # @raise [Haml::Error] if there's a Haml syntax error in the template
     def initialize(template, options = {})
+      # Reflect changes of `Haml::Options.defaults` to `Haml::TempleEngine` options, but `#initialize_encoding`
+      # should be run against the arguemnt `options[:encoding]` for backward compatibility with old `Haml::Engine`.
+      options = Options.defaults.dup.tap { |o| o.delete(:encoding) }.merge!(options)
       @options = Options.new(options)
 
       @template = check_haml_encoding(template) do |msg, line|
@@ -166,8 +170,13 @@ module Haml
       end
 
       begin
-        eval("Proc.new { |*_haml_locals| _haml_locals = _haml_locals[0] || {};" <<
-             @temple_engine.precompiled_with_ambles(local_names) << "}\n", scope, @options.filename, @options.line)
+        str = @temple_engine.precompiled_with_ambles(local_names)
+        eval(
+          "Proc.new { |*_haml_locals| _haml_locals = _haml_locals[0] || {}; #{str}}\n",
+          scope,
+          @options.filename,
+          @options.line
+        )
       rescue ::SyntaxError => e
         raise SyntaxError, e.message
       end
